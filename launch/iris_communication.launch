@@ -1,0 +1,4 @@
+<launch>
+    <node name="comm_basestation" pkg="iris_communication" type="comm_basestation" output="screen" respawn="true" />
+
+</launch>
