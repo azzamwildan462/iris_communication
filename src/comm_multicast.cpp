@@ -99,11 +99,31 @@ uint16_t status_sub_sub_sub_algoritma;
 
 // KeyDB
 auto keydb_put_stream = rediscpp::make_stream("127.0.0.1", "6969");
-uint8_t toleransi_data_delay = 15;
+uint8_t toleransi_data_delay = 10;
 int64_t robot_epoch[6];
 
 // ...
 int8_t data_valid = 0;
+
+void updateStatusRobotLain()
+{
+    // Set status data apakah valid atau tidak, data dikatakan tidak valid ketika datanya expired
+    int64_t epoch_now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int8_t status_valid = 0;
+    char s_valid_key[16] = "data_valid";
+    for (int8_t i = 1; i <= 5; i++)
+    {
+        char id[2];
+        sprintf(id, "%d", i);
+        memcpy(s_valid_key + 10, id, 1);
+        status_valid = (abs(epoch_now - robot_epoch[i]) <= toleransi_data_delay);
+        auto const put_value = std::to_string(status_valid);
+        rediscpp::execute_no_flush(*keydb_put_stream, "set", s_valid_key, put_value);
+        // printf("%s: %d %d -> %d (%d)\n", s_valid_key, epoch_now, robot_epoch[i], abs(epoch_now - robot_epoch[i]), status_valid);
+    }
+
+    std::flush(*keydb_put_stream);
+}
 
 void putDBData()
 {
@@ -139,17 +159,17 @@ void putDBData()
         }
     }
     // Set status data apakah valid atau tidak, data dikatakan tidak valid ketika datanya expired
-    char s_valid_key[16] = "data_valid";
-    for (int8_t i = 1; i <= 5; i++)
-    {
-        char id[2];
-        sprintf(id, "%d", i);
-        memcpy(s_valid_key + 10, id, 1);
-        status_valid = (abs(epoch_now - robot_epoch[i]) <= toleransi_data_delay);
-        auto const put_value = std::to_string(status_valid);
-        rediscpp::execute_no_flush(*keydb_put_stream, "set", s_valid_key, put_value);
-        // printf("%s: %d %d -> %d (%d)\n", s_valid_key, epoch_now, robot_epoch[i], abs(epoch_now - robot_epoch[i]), status_valid);
-    }
+    // char s_valid_key[16] = "data_valid";
+    // for (int8_t i = 1; i <= 5; i++)
+    // {
+    //     char id[2];
+    //     sprintf(id, "%d", i);
+    //     memcpy(s_valid_key + 10, id, 1);
+    //     status_valid = (abs(epoch_now - robot_epoch[i]) <= toleransi_data_delay);
+    //     auto const put_value = std::to_string(status_valid);
+    //     rediscpp::execute_no_flush(*keydb_put_stream, "set", s_valid_key, put_value);
+    //     // printf("%s: %d %d -> %d (%d)\n", s_valid_key, epoch_now, robot_epoch[i], abs(epoch_now - robot_epoch[i]), status_valid);
+    // }
 
     std::flush(*keydb_put_stream);
 }
@@ -524,6 +544,7 @@ void cllbckTim50HzSend(const ros::TimerEvent &event)
             ros::shutdown();
         }
     }
+    updateStatusRobotLain();
 }
 void cllbckTim50HzRecv(const ros::TimerEvent &event)
 {
