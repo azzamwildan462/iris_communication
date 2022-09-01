@@ -205,8 +205,11 @@ void cllbck_tim_20hz_send(const ros::TimerEvent &event)
 	memcpy(serial_tx + 34, &status_warna, 2);
 	memcpy(serial_tx + 36, &ketinggian_penendang_global, 2);
 
+<<<<<<< HEAD
 	// printf("%.02f %.02f\n", pos_x_offset, pos_y_offset);
 
+=======
+>>>>>>> d818d37 (Add files)
 	// ROS_INFO("bang? %d", ketinggian_penendang_global);
 
 	// memcpy(serial_tx + 32, &theta, 4);
